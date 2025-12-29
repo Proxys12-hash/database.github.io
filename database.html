@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PRIMAL PANIC | FROST TERMINAL</title>
+    <style>
+        :root { 
+            --neon-blue: #00d2ff; 
+            --deep-blue: #003366;
+            --glass-bg: rgba(5, 5, 5, 0.95);
+            --border-glow: 0 0 15px rgba(0, 210, 255, 0.4);
+        }
+
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* SNOW BACKGROUND */
+        #snow-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+        }
+
+        /* SECURE LOGIN OVERLAY */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999;
+        }
+        .login-card {
+            background: var(--glass-bg); border: 2px solid var(--neon-blue);
+            padding: 50px; border-radius: 10px; text-align: center;
+            box-shadow: var(--border-glow);
+            width: 350px;
+        }
+        .security-icon {
+            font-size: 50px; margin-bottom: 20px; color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        /* MAIN DASHBOARD */
+        #dashboard { display: none; width: 95%; max-width: 1300px; margin: 20px auto; position: relative; }
+
+        .header {
+            background: linear-gradient(135deg, #000, var(--deep-blue));
+            padding: 25px; border-radius: 10px; border-bottom: 3px solid var(--neon-blue);
+            margin-bottom: 25px; box-shadow: var(--border-glow);
+            text-align: center;
+        }
+        h1 { margin: 0; font-style: italic; font-weight: 900; letter-spacing: 6px; color: #fff; text-shadow: 0 0 10px var(--neon-blue); }
+
+        .console-box {
+            background: var(--glass-bg); border: 1px solid rgba(0, 210, 255, 0.2);
+            padding: 25px; border-radius: 15px; margin-bottom: 30px;
+        }
+
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .input-wrap { display: flex; flex-direction: column; }
+        .input-header-text { font-size: 10px; color: var(--neon-blue); margin-bottom: 6px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+
+        input, select {
+            background: #000; border: 1px solid #222; color: #fff;
+            padding: 12px; border-radius: 5px; outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue); }
+
+        .btn-action {
+            background: var(--neon-blue); color: #000; border: none; padding: 15px;
+            font-weight: 900; cursor: pointer; border-radius: 5px; width: 100%;
+            margin-top: 20px; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s;
+        }
+        .btn-action:hover { background: #fff; box-shadow: 0 0 20px #fff; }
+
+        /* DATA TABLE */
+        table { width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.9); border-radius: 10px; overflow: hidden; }
+        th { background: var(--deep-blue); color: #fff; text-transform: uppercase; font-size: 11px; padding: 15px; }
+        tr { border-bottom: 1px solid rgba(0, 210, 255, 0.1); }
+        td { padding: 15px; text-align: center; font-size: 13px; }
+
+        .btn-edit { color: var(--neon-blue); cursor: pointer; border: 1px solid var(--neon-blue); padding: 5px 12px; border-radius: 4px; font-size: 11px; }
+        .btn-edit:hover { background: var(--neon-blue); color: #000; }
+        .btn-del { color: #ff4444; cursor: pointer; margin-left: 15px; font-size: 11px; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <canvas id="snow-canvas"></canvas>
+
+    <div id="login-overlay">
+        <div class="login-card">
+            <div class="security-icon">⚡</div>
+            <h2 style="color: #fff; letter-spacing: 3px; margin-bottom: 5px;">SECURITY CHALLENGE</h2>
+            <p style="color: var(--neon-blue); font-size: 12px; margin-bottom: 25px;">ENTER SYSTEM ACCESS KEY</p>
+            <input type="password" id="access-key" placeholder="••••••••" style="text-align: center; width: 80%; font-size: 20px; letter-spacing: 4px;">
+            <button class="btn-action" onclick="verifyAccess()">AUTHORIZE ACCESS</button>
+        </div>
+    </div>
+
+    <div id="dashboard">
+        <div class="header">
+            <h1>PRIMAL PANIC // STAFF CORE</h1>
+            <p style="margin:5px 0 0 0; font-weight:bold; color: var(--neon-blue); letter-spacing: 2px;">ENCRYPTED MANAGEMENT TERMINAL</p>
+        </div>
+
+        <div class="console-box">
+            <h3 id="form-title" style="color: #fff; margin-top:0; letter-spacing: 1px;">DATABASE INPUT CONSOLE</h3>
+            <input type="hidden" id="edit-id">
+            <div class="grid-inputs">
+                <div class="input-wrap"><span class="input-header-text">Staff Username</span><input type="text" id="name"></div>
+                <div class="input-wrap"><span class="input-header-text">Security Rank</span><input type="text" id="rank"></div>
+                <div class="input-wrap"><span class="input-header-text">Region (Timezone)</span><input type="text" id="region"></div>
+                <div class="input-wrap"><span class="input-header-text">Member Joined On</span><input type="date" id="joined"></div>
+                <div class="input-wrap"><span class="input-header-text">Latest Promotion On</span><input type="date" id="promoted"></div>
+                <div class="input-wrap">
+                    <span class="input-header-text">Duty Status</span>
+                    <select id="status">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="ON BREAK">ON BREAK</option>
+                        <option value="EXEMPT">EXEMPT</option>
+                    </select>
+                </div>
+                <div class="input-wrap"><span class="input-header-text">Strike Count</span><input type="number" id="strikes" value="0"></div>
+            </div>
+            <button id="main-btn" class="btn-action" onclick="saveStaff()">UPLOAD DATA TO CLOUD & DISCORD</button>
+            <button id="cancel-btn" style="display:none; background: #222; color: #fff; margin-top:10px;" class="btn-action" onclick="resetForm()">ABORT EDIT</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Staff Name</th><th>Rank</th><th>Region</th><th>Joined Date</th><th>Promotion Date</th><th>Status</th><th>Strikes</th><th>Management</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const WEBHOOK = "https://discord.com/api/webhooks/1455169892415443139/9o_j_YqPQ1BoHSvxv1BXymZESPVY7fKF5srBwKUp6jtiHUydqQfqsF2EGER36IeF2kSW";
+        const MASTER_KEY = "sigma"; // You can change this to any key you want
+
+        /* SNOW SYSTEM */
+        const canvas = document.getElementById('snow-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() { this.reset(); this.y = Math.random() * canvas.height; }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = -10;
+                this.size = Math.random() * 2 + 1;
+                this.speed = Math.random() * 1 + 0.3;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        for (let i = 0; i < 120; i++) particles.push(new Particle());
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        /* SECURITY LOGIC */
+        function verifyAccess() {
+            const key = document.getElementById('access-key').value;
+            if (key === MASTER_KEY) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                loadData();
+            } else {
+                alert("ACCESS DENIED: INCORRECT SYSTEM KEY");
+            }
+        }
+
+        /* DATA LOGIC */
+        function saveStaff() {
+            const id = document.getElementById('edit-id').value;
+            const staff = {
+                id: id ? parseInt(id) : Date.now(),
+                name: document.getElementById('name').value,
+                rank: document.getElementById('rank').value,
+                region: document.getElementById('region').value,
+                joined: document.getElementById('joined').value,
+                promoted: document.getElementById('promoted').value,
+                status: document.getElementById('status').value,
+                strikes: document.getElementById('strikes').value
+            };
+
+            if (!staff.name) return alert("System Error: No Staff Name Identified");
+
+            let list = JSON.parse(localStorage.getItem('primal_frost_db')) || [];
+            if (id) {
+                const idx = list.findIndex(m => m.id === staff.id);
+                list[idx] = staff;
+            } else {
+                list.push(staff);
+            }
+
+            localStorage.setItem('primal_frost_db', JSON.stringify(list));
+            sendDiscord(staff, id ? "PROFILE_REVISION" : "NEW_STAFF_RECORD");
+            resetForm();
+            loadData();
+        }
+
+        function loadData() {
+            const list = JSON.parse(localStorage.getItem('primal_frost_db')) || [];
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            list.forEach(m => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td style="font-weight:bold; color:var(--neon-blue)">${m.name}</td>
+                    <td>${m.rank}</td>
+                    <td>${m.region}</td>
+                    <td>${m.joined}</td>
+                    <td>${m.promoted}</td>
+                    <td style="font-weight:bold;">${m.status}</td>
+                    <td style="color:red; font-weight:bold;">${m.strikes}</td>
+                    <td>
+                        <span class="btn-edit" onclick="startEdit(${m.id})">MODIFY</span>
+                        <span class="btn-del" onclick="deleteStaff(${m.id})">WIPE</span>
+                    </td>
+                `;
+            });
+        }
+
+        function startEdit(id) {
+            const list = JSON.parse(localStorage.getItem('primal_frost_db')) || [];
+            const m = list.find(x => x.id === id);
+            document.getElementById('edit-id').value = m.id;
+            document.getElementById('name').value = m.name;
+            document.getElementById('rank').value = m.rank;
+            document.getElementById('region').value = m.region;
+            document.getElementById('joined').value = m.joined;
+            document.getElementById('promoted').value = m.promoted;
+            document.getElementById('status').value = m.status;
+            document.getElementById('strikes').value = m.strikes;
+            
+            document.getElementById('form-title').innerText = "SYSTEM REVISION: " + m.name;
+            document.getElementById('main-btn').innerText = "COMMIT CHANGES";
+            document.getElementById('cancel-btn').style.display = "block";
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function resetForm() {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('rank').value = '';
+            document.getElementById('form-title').innerText = "DATABASE INPUT CONSOLE";
+            document.getElementById('main-btn').innerText = "UPLOAD DATA TO CLOUD & DISCORD";
+            document.getElementById('cancel-btn').style.display = "none";
+        }
+
+        function deleteStaff(id) {
+            if(confirm("CONFIRM DATA PURGE?")) {
+                let list = JSON.parse(localStorage.getItem('primal_frost_db')) || [];
+                list = list.filter(m => m.id !== id);
+                localStorage.setItem('primal_frost_db', JSON.stringify(list));
+                loadData();
+            }
+        }
+
+        function sendDiscord(data, type) {
+            const embed = {
+                "embeds": [{
+                    "title": "❄️ PRIMAL TERMINAL LOG: " + type,
+                    "color": 1752223,
+                    "fields": [
+                        {"name": "Staff Profile", "value": data.name, "inline": true},
+                        {"name": "Status", "value": data.status, "inline": true},
+                        {"name": "Security Rank", "value": data.rank || "N/A", "inline": true},
+                        {"name": "Assigned Region", "value": data.region || "N/A", "inline": true},
+                        {"name": "Service Record", "value": `Joined: ${data.joined || "Unknown"}\nPromoted: ${data.promoted || "N/A"}`, "inline": false},
+                        {"name": "System Strikes", "value": data.strikes.toString(), "inline": true}
+                    ],
+                    "footer": {"text": "Terminal Link Active • " + new Date().toLocaleString()}
+                }]
+            };
+            fetch(WEBHOOK, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(embed) });
+        }
+    </script>
+</body>
+</html>
